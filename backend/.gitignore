@@ -1,0 +1,18 @@
+# python
+venv/
+__pycache__/
+*.pyc
+
+# node
+node_modules/
+
+# env files
+.env
+
+# model cache
+.cache/
+*.pt
+*.bin
+
+# system
+.DS_Store
