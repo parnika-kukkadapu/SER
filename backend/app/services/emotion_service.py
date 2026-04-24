@@ -96,6 +96,51 @@ def predict_frames(frames):
 
     return emotions
 
+def smooth_predictions(emotions, timestamps, min_duration=0.5):
+
+    smoothed_emotions = emotions.copy()
+    smoothed_timestamps = timestamps.copy()
+
+    # Step 1: Majority voting (window size = 3)
+    for i in range(1, len(emotions) - 1):
+
+        window = [emotions[i - 1], emotions[i], emotions[i + 1]]
+
+        majority = max(set(window), key=window.count)
+
+        smoothed_emotions[i] = majority
+
+    # Step 2: Remove very short segments
+    final_emotions = []
+    final_timestamps = []
+
+    i = 0
+    while i < len(smoothed_emotions):
+
+        current_emotion = smoothed_emotions[i]
+        start_time = smoothed_timestamps[i]
+
+        j = i + 1
+        while j < len(smoothed_emotions) and smoothed_emotions[j] == current_emotion:
+            j += 1
+
+        end_time = smoothed_timestamps[j - 1]
+
+        duration = end_time - start_time
+
+        # If segment too short → merge with previous
+        if duration < min_duration and len(final_emotions) > 0:
+
+            final_emotions[-1] = final_emotions[-1]  # keep previous emotion
+
+        else:
+            final_emotions.append(current_emotion)
+            final_timestamps.append(start_time)
+
+        i = j
+
+    return final_emotions, final_timestamps
+
 
 def detect_transitions(timestamps, emotions):
 
@@ -136,6 +181,8 @@ def emotion_timeline(audio_file):
 
     emotions = predict_frames(frames)
 
-    timeline = detect_transitions(timestamps, emotions)
+    smoothed_emotions, smoothed_timestamps = smooth_predictions(emotions, timestamps)
+
+    timeline = detect_transitions(smoothed_timestamps, smoothed_emotions)
 
     return timeline
